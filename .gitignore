@@ -1,2 +1,9 @@
-/cache/
-/config/development/
+/cache
+/config
+/vendor
+composer.lock
+
+# OSX files
+
+.idea
+.DS_Store
