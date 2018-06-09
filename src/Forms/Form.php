@@ -24,16 +24,39 @@
  * SOFTWARE.
  */
 
-namespace Eagle\Forms\Validation\Validator;
+namespace Eagle\Forms;
 
+use Phalcon\Exception;
+use Phalcon\Http\Request;
+use Phalcon\Mvc\Model;
 use Phalcon\Tag;
 use Phalcon\Filter;
 use Phalcon\Validation\Message;
 use Phalcon\Forms\Form as BaseForm;
 
+/**
+ * Class Form
+ *
+ * @package Eagle\Forms
+ */
 
 class Form extends BaseForm {
 
+	/**
+	 * On Error callbacks
+	 *
+	 * @var callable[]
+	 */
+
+	public $onError = [];
+
+	/**
+     * On Success callbacks
+     *
+	 * @var callable[]
+	 */
+
+    public $onSuccess = [];
 
 	/**
      * Element error class
@@ -72,20 +95,24 @@ class Form extends BaseForm {
 
 			if(!$this->isValid( $this->request->getPost() )){
 
-				foreach($this->getMessages() as $el => $msg){
-
-					$this->flashSession->error($msg);
-
-				}
-
 				$this->setDefaultsFromRequest($this->request);
+
+				if(method_exists($this, 'onError'))
+					call_user_func([$this, 'onError']);
 
 			} else {
 
-				if(!call_user_func([$this, $methodName], $this->getPostData())) {
+			    if(call_user_func([$this, $methodName], $this->getPostData()) === false) {
 
 				    $this->setDefaultsFromRequest($this->request);
 
+				    if(method_exists($this, 'onError'))
+				        call_user_func([$this, 'onError']);
+
+                } else {
+
+				    if(method_exists($this, 'onSuccess'))
+					    call_user_func([$this, 'onSuccess']);
                 }
 
 			}
@@ -232,13 +259,13 @@ class Form extends BaseForm {
 
 	/**
 	 * Set defaults from Request
-	 * @param \Phalcon\Http\Request $request
+	 * @param Request $request
 	 */
 
 	function setDefaultsFromModel(Model $model) {
 
 	    if(!isset($this->_uid))
-	        throw new \Phalcon\Exception('Form _uid must be set before setting default values.');
+	        throw new Exception('Form _uid must be set before setting default values.');
 
 		if($this->request->getPost('form_uid') != $this->_uid) {
 
